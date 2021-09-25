@@ -1,13 +1,2 @@
-Welcome! 
-
-This is a minimal example of a book based on R Markdown and **bookdown** (https://github.com/rstudio/bookdown). 
-
-This template provides a skeleton file structure that you can edit to create your book. 
-
-The contents inside the .Rmd files provide some pointers to help you get started, but feel free to also delete the content in each file and start fresh.
-
-Additional resources:
-
-The **bookdown** book: https://bookdown.org/yihui/bookdown/
-
-The **bookdown** package reference site: https://pkgs.rstudio.com/bookdown
+# ¡Hola!
+Este libro representa los esfuerzos realizados por mí, [David Galicia](https://twitter.com/OyeDavidGalicia), para entender cómo son generadas imágenes punteadas a través de computadoras. El objetivo de este proyecto recreativo es realizar un recorrido a tráves los algoritmos más conocidos para hacer arte punteado, observando desde resultados nada esperados hasta algunos que podríamos considerar arte. Todo el código necesario se encuentra explicado y puede ser utilizado para su diversión. El lenguaje de programación usado es R, pero esperaría que con la explicación brindada los algoritmos puedan ser implementados en el lenguaje de su preferencia.
