@@ -1,0 +1,6 @@
+introducción
+materiales-requeridos
+algoritmos-que-distribuyen-el-error
+floyd-steinberg
+jarvis-judice-ninke
+comparación-de-algoritmos

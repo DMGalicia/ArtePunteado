@@ -1,0 +1,44 @@
+--- 
+title: "Arte computacional punteado"
+author: "David Martínez-Galicia"
+date: "`r Sys.Date()`"
+documentclass: book
+bibliography: [book.bib, packages.bib]
+# url: your book url like https://bookdown.org/yihui/bookdown
+# cover-image: path to the social sharing image like images/cover.jpg
+description: |
+  Algoritmos más famosos para hacer arte punteado.
+link-citations: yes
+---
+
+# Introducción
+
+Esta libro representa los esfuerzos realizados por mí, [David Galicia](https://twitter.com/OyeDavidGalicia), para entender cómo son generadas imágenes punteadas a través de computadoras. El objetivo de este proyecto recreativo es realizar un recorrido a tráves los algoritmos más conocidos para hacer arte punteado, observando desde resultados nada esperados hasta algunos que podríamos considerar arte. Todo el código necesario se encuentra explicado y puede ser utilizado para su diversión. El lenguaje de programación usado es R, pero esperaría que con la explicación brindada los algoritmos puedan ser implementados en el lenguaje de su preferencia.
+
+------------------------------------------------------------------------
+
+## Materiales requeridos
+
+Además del entorno de R, requeriremos algunas librerías para facilitar  tareas en las que no nos enfocaremos mucho.
+
+```{r Librerias requeridas, message=FALSE, warning=FALSE, results='hide'}
+library(dplyr) #Manipulación de datos
+library(imager) #Procesamiento de imágenes
+library(ggplot2) #Visualización de datos
+library(gridExtra) #Combinación gráficas en arreglos personalizados
+```
+
+También necesitamos una imagen con la que probaremos nuestros algoritmos. Dado que sólo enfocaremos en hacer arte punteado con un color, las imagen con las que trabaremos deben de estar en escala de grises. La imagen que seleccioné muestra un helecho con fondo blanco. Aparentemente con esta imagen fueron probados muchos algoritmos que inicialmente se propusieron. Si desean ocupar otra imagen, la libreria **imager** permite manipular imágenes PNG, JPEG y BMP.
+
+```{r Imagen de prueba, message=FALSE, warning=FALSE, results='hide'}
+im <- load.image("http://dahtah.github.io/imager/images/stippling_leaves.png")
+im <- grayscale(im) #Si es necesario, convertir la imagen a escala de grises
+
+#Gráfica con la imagen original
+p1 <- im %>% as.data.frame %>% ggplot(aes(x, y)) + #Datos
+  geom_raster(aes(fill = value), show.legend = FALSE) + #Gráfica 
+  scale_fill_gradient(low="black", high="white") + # Color
+  scale_y_reverse() + xlab("") + ylab("") + theme_void() # Formato
+
+p1 + ggtitle("Imagen de prueba")
+```

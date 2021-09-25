@@ -1,0 +1,121 @@
+# Algoritmos que distribuyen el error
+Unos de los algoritmos más antiguos para hacer arte punteado son los que calculan el error de cada pixel y luego lo distribuyen a sus vecinos. Actualmente aunque existen varios algoritmos con distintas configuraciones para distribuir el ruido, todos se basan en la misma idea.
+
+## Floyd-Steinberg
+
+La primera versión de estos algoritmos fue propuesta por [@floyd1976]. Este algoritmo actualiza el valor de cada pixel y distribuye el error a 4 pixeles vecinos. El orden que toma para actualizar los pixeles es de izquierda a derecha y de arriba hacia abajo. Por cada pixel:
+
+1.  Se calcula el valor actualizado usando la función **round**.
+
+2.  Se calcula el error, restando el valor antiguo menos el valor nuevo.
+
+3.  Se distribuye el error a pixeles vecinos.
+
+La siguiente tabla describe la distribución del error en los pixeles vecinos.
+
++:--------------------:+:---------------------:+:---------------------:+
+|                      | Pixel actualizado     | \+ 7/16 del error     |
++----------------------+-----------------------+-----------------------+
+| \+ 3 /16 del error   | \+ 5/16 del error     | \+ 1/16 del error     |
++----------------------+-----------------------+-----------------------+
+
+: Distribución del error en el Algoritmo Floyd-Steinberg
+
+Es importante tomar en cuenta cuando el pixel a actualizar forma parte de límite de la imagen, algunos de los vecinos quedarán fuera de los límites de la imagen. Para solucionar este posible error, el algoritmo **FSdithering** encapsula la actualización de los vecinos en una sentencia **try**.
+
+```{r Algoritmo Floyd-Steinberg}
+#Algoritmo Floyd-Steinberg
+FSdithering <- function(imagen){
+  imagen <- imagen %>% as.matrix() #Conversión de la imagen a una matriz
+  ancho <- width(imagen)
+  alto <- height(imagen)
+  for (y in seq(1, alto)) {
+    for (x in seq(1, ancho)) { #Por cada pixel
+      valorViejo <- imagen[x, y]
+      valorNuevo <- round(imagen[x, y]) #Calcular su nuevo valor
+      imagen[x, y] <- valorNuevo #Actualizar el valor antiguo
+      error <- valorViejo - valorNuevo # Calcular el error
+      #Difundir el error en los pixeles cercanos
+      try(imagen[x+1, y  ] <- imagen[x+1, y  ] + error*(7/16), silent = T)
+      try(imagen[x-1, y+1] <- imagen[x-1, y+1] + error*(3/16), silent = T)
+      try(imagen[x  , y+1] <- imagen[x  , y+1] + error*(5/16), silent = T)
+      try(imagen[x+1, y+1] <- imagen[x+1, y+1] + error*(1/16), silent = T)
+    }
+  }
+  imagen %>% as.cimg()
+}
+
+#Gráficación de los resultados
+p2 <- FSdithering(im) %>% as.data.frame() %>% ggplot(aes(x,y)) + #Datos
+  geom_raster(aes(fill = value), show.legend = FALSE) + #Gráfica
+  scale_fill_gradient(low="black", high="white") + # Color
+  scale_y_reverse() + xlab("") + ylab("") + theme_void() # Formato
+
+#Comparación de los resultados
+grid.arrange(p1 + ggtitle("Imagen original"), 
+             p2 + ggtitle("Algoritmo de Floyd-Steinberg"), nrow = 1)
+```
+
+## Jarvis-Judice-Ninke
+
+A diferencia de la formulación de Floyd y Steinberg, el algoritmo de [@jarvis1976] incrementa a 12 el número de pixeles que emplea para distiribuir el ruido.
+
++:-----------------:+:-----------------:+:-----------------:+:-----------------:+:-----------------:+
+|                   |                   | Pixel actualizado | \+ 7/48 del error | \+ 5/48 del error |
++-------------------+-------------------+-------------------+-------------------+-------------------+
+| \+ 3/48 del error | \+ 5/48 del error | \+ 7/48 del error | \+ 5/48 del error | \+ 3/48 del error |
++-------------------+-------------------+-------------------+-------------------+-------------------+
+| \+ 1/48 del error | \+ 3/48 del error | \+ 5/48 del error | \+ 3/48 del error | \+ 1/48 del error |
++-------------------+-------------------+-------------------+-------------------+-------------------+
+
+: Distribución del error en el algoritmo de Jarvis-Judice-Ninke
+
+```{r Algoritmo Jarvis-Judice-Ninke}
+#Algoritmo Jarvis-Judice-Ninke
+JJNdithering <- function(imagen){
+  imagen <- imagen %>% as.matrix() #Conversión de la imagen a una matriz
+  ancho <- width(imagen)
+  alto <- height(imagen)
+  for (y in seq(1, alto)) {
+    for (x in seq(1, ancho)) { #Por cada pixel
+      valorViejo <- imagen[x, y]
+      valorNuevo <- round(imagen[x, y]) #Calcular el valor nuevo del pixel
+      imagen[x, y] <- valorNuevo
+      error <- valorViejo - valorNuevo # Calcular el error
+      #Difundir el error en los pixeles cercanos
+      try(imagen[x+1, y  ] <- imagen[x+1, y  ] + error*(7/48), silent = T)
+      try(imagen[x+2, y  ] <- imagen[x+2, y  ] + error*(5/48), silent = T)
+      try(imagen[x-2, y+1] <- imagen[x-2, y+1] + error*(3/48), silent = T)
+      try(imagen[x-1, y+1] <- imagen[x-1, y+1] + error*(5/48), silent = T)
+      try(imagen[x  , y+1] <- imagen[x  , y+1] + error*(7/48), silent = T)
+      try(imagen[x+1, y+1] <- imagen[x+1, y+1] + error*(5/48), silent = T)
+      try(imagen[x+2, y+1] <- imagen[x+2, y+1] + error*(3/48), silent = T)
+      try(imagen[x-2, y+2] <- imagen[x-2, y+2] + error*(1/48), silent = T)
+      try(imagen[x-1, y+2] <- imagen[x-1, y+2] + error*(3/48), silent = T)
+      try(imagen[x  , y+2] <- imagen[x  , y+2] + error*(5/48), silent = T)
+      try(imagen[x+1, y+2] <- imagen[x+1, y+2] + error*(3/48), silent = T)
+      try(imagen[x+2, y+2] <- imagen[x+2, y+2] + error*(1/48), silent = T)
+    }
+  }
+  imagen %>% as.cimg()
+}
+
+#Gráficación de resultados
+p3 <- JJNdithering(im) %>% as.data.frame() %>% ggplot(aes(x,y)) + #Datos
+  geom_raster(aes(fill = value), show.legend = FALSE) + #Gráfica
+  scale_fill_gradient(low="black", high="white") + # Color
+  scale_y_reverse() + xlab("") + ylab("") + theme_void() # Formato
+
+#Comparación de resultados
+grid.arrange(p1 + ggtitle("Imagen original"), 
+             p3 + ggtitle("Algoritmo de Jarvis-Judice-Ninke"), nrow = 1)
+```
+
+## Comparación de algoritmos
+
+En términos de desempeño, los algoritmos previos producen resultados muy similares. Sin emabrgo, el agoritmo de Jarvis y colegas tarda más en ejecutarse por el número de vecinos a actualizar y aparentemente en algunas secciones de fondo blanco genera pixeles negros. Por estas observaciones, yo sugeriría ocupar la versión de Floyd-Steinberg.
+
+```{r Comparación de algoritmos que distribuyen el error}
+grid.arrange(p2 + ggtitle("Algoritmo de Floyd-Steinberg"), 
+             p3 + ggtitle("Algoritmo de Jarvis-Judice-Ninke"), nrow = 1)
+```
