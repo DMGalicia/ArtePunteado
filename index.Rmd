@@ -1,44 +1,72 @@
---- 
+---
 title: "Arte computacional punteado"
-author: "David Martínez-Galicia"
+author: "David Martínez-Galicia - IIIA - UV"
 date: "`r Sys.Date()`"
 documentclass: book
-bibliography: [book.bib, packages.bib]
-# url: your book url like https://bookdown.org/yihui/bookdown
-# cover-image: path to the social sharing image like images/cover.jpg
-description: |
-  Algoritmos más famosos para hacer arte punteado.
+bibliography: book.bib
 link-citations: yes
+output:
+  bookdown::html_document2:
+    includes:
+      in_header: header.html
+  bookdown::gitbook:
+    includes:
+      in_header: header.html
 ---
 
 # Introducción
 
-Este libro representa los esfuerzos realizados por mí, [David Galicia](https://twitter.com/OyeDavidGalicia), para entender cómo son generadas imágenes punteadas a través de computadoras. El objetivo de este proyecto recreativo es realizar un recorrido a tráves los algoritmos más conocidos para hacer arte punteado, observando desde resultados nada esperados hasta algunos que podríamos considerar arte. Todo el código necesario se encuentra explicado y puede ser utilizado para su diversión. El lenguaje de programación usado es R, pero esperaría que con la explicación brindada los algoritmos puedan ser implementados en el lenguaje de su preferencia.
+Este libro representa los esfuerzos que he realizado para entender cómo es generado el arte punteado a través de computadoras. Mi objetivo principal es realizar un recorrido de los algoritmos más conocidos para poder entender su funcionamiento y generar mis propias obras de arte. En especial, me enfocaré en revisar los algoritmos que realizan arte punteado con un solo color.
+
+Todo el código necesario para generar las imágenes se encuentra explicado y puede ser utilizado para su diversión. El lenguaje de programación que uso es R, pero esperaría que con la explicación brindada los algoritmos puedan ser implementados en el lenguaje de su preferencia.
 
 ------------------------------------------------------------------------
 
 ## Materiales requeridos
 
-Además del entorno de R, requeriremos algunas librerías para facilitar  tareas en las que no nos enfocaremos mucho.
+Además del entorno de R, requeriremos algunas librerías para facilitar tareas en las que no nos enfocaremos mucho.
 
 ```{r Librerias requeridas, message=FALSE, warning=FALSE, results='hide'}
 library(dplyr) #Manipulación de datos
 library(imager) #Procesamiento de imágenes
 library(ggplot2) #Visualización de datos
 library(gridExtra) #Combinación gráficas en arreglos personalizados
+library(gganimate) #Animación de gráficas
 ```
 
-También necesitamos una imagen con la que probaremos nuestros algoritmos. Dado que sólo enfocaremos en hacer arte punteado con un color, las imagen con las que trabaremos deben de estar en escala de grises. La imagen que seleccioné muestra un helecho con fondo blanco. Aparentemente con esta imagen fueron probados muchos algoritmos que inicialmente se propusieron. Si desean ocupar otra imagen, la libreria **imager** permite manipular imágenes PNG, JPEG y BMP.
+También necesitaremos algunas imágenes para probar nuestros algoritmos. Dado que sólo enfocaremos en hacer arte punteado con un color, las imágenes que usaremos deben de estar en escala de grises. Particularmente, usare las siguientes imágenes:
 
-```{r Imagen de prueba, message=FALSE, warning=FALSE, results='hide'}
-im <- load.image("http://dahtah.github.io/imager/images/stippling_leaves.png")
-im <- grayscale(im) #Si es necesario, convertir la imagen a escala de grises
+1.  Helecho con fondo blanco: Esta imagen tiene 991 pixeles de ancho y 994 de alto. Ha sido ocupada por muchos trabajos para evaluar cómo los algoritmos generan los detalles, colores y matices.
+
+2.  Perro pug: Esta imagen tiene un formato cuadrado de 55 pixeles y la generé reduciendo el tamaño de una foto propia. Será de particular ayuda para mostrar cómo los algoritmos transforman las imágenes originales.
+
+Si desean ocupar otras imágenes, la librería **imager** permite manipular imágenes PNG, JPEG y BMP.
+
+```{r Imagenes de prueba, message=FALSE, warning=FALSE, results='hide', collapse=FALSE}
+im1 <- load.image("http://dmgalicia.github.io/ArtePunteado/images/stippling_leaves.png")
+im2 <- load.image("http://dmgalicia.github.io/ArtePunteado/images/Pug.png")
+#Si es necesario, convertir la imagen a escala de grises con la función grayscale(im)
 
 #Gráfica con la imagen original
-p1 <- im %>% as.data.frame %>% ggplot(aes(x, y)) + #Datos
+p1 <- im1 %>% as.data.frame %>% ggplot(aes(x, y)) + #Datos
   geom_raster(aes(fill = value), show.legend = FALSE) + #Gráfica 
   scale_fill_gradient(low="black", high="white") + # Color
-  scale_y_reverse() + xlab("") + ylab("") + theme_void() # Formato
+  scale_y_reverse() + xlab("") + ylab("") + theme_void() + # Formato
+  ggtitle(label = "Imagen de prueba 1", #Títulos
+             subtitle = paste(width(im1), "pixeles x", height(im1), "pixeles."))
 
-p1 + ggtitle("Imagen de prueba")
+p2 <- im2 %>% as.data.frame %>% ggplot(aes(x, y)) + #Datos
+  geom_raster(aes(fill = value), show.legend = FALSE) + #Gráfica 
+  scale_fill_gradient(low="black", high="white") + # Color
+  scale_y_reverse() + xlab("") + ylab("") + theme_void() + # Formato
+  ggtitle(label = "Imagen de prueba 2", #Títulos
+             subtitle = paste(width(im2), "pixeles x", height(im2), "pixeles."))
+
+grid.arrange(p1, p2, nrow = 1)
 ```
+
+------------------------------------------------------------------------
+
+## Información del autor
+
+¡Hola! Mi nombre es David Martínez Galicia. Actualmente soy estudiante del Doctorado en Inteligencia Artificial de la Universidad Veracruzana y formo parte del grupo de divulgación [Código IA](https://www.youtube.com/c/CodigoIA). Mis principales temas de interés son la minería de datos y el aprendizaje máquina. De vez en cuando me hago proyectos aleatorios para divertirme un rato. Si tienen alguna duda, comentario o sugerencia, me pueden contactar a través de mi cuenta en [Twitter](https://twitter.com/OyeDavidGalicia) o de mi [correo personal](mailto:davidgalicia@outlook.es). Espero disfruten jugar con estos algoritmos tanto como yo.

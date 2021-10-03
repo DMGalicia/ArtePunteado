@@ -1,7 +1,8 @@
 bookdown::gitbook:
   config:
+    show_codefolding_buttons: true
     toc:
-      collapse: section
+      collapse: null
       scroll_highlight: true
       before: null
       after: null

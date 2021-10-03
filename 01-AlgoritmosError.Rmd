@@ -1,31 +1,94 @@
 # Algoritmos que distribuyen el error
-Unos de los algoritmos más antiguos para hacer arte punteado son los que calculan el error de cada pixel y luego lo distribuyen a sus vecinos. Actualmente aunque existen varios algoritmos con distintas configuraciones para distribuir el ruido, todos se basan en la misma idea.
+
+Unos de los algoritmos más antiguos para hacer arte punteado son los que calculan el error de un pixel y luego lo distribuyen a sus vecinos. El orden que siguen para actualizar los pixeles generalmente es de izquierda a derecha y de arriba hacia abajo. Aunque existen varios algoritmos con distintas configuraciones para distribuir el ruido, todos se basan en la misma idea.
+
+------------------------------------------------------------------------
 
 ## Floyd-Steinberg
 
-La primera versión de estos algoritmos fue propuesta por [@floyd1976]. Este algoritmo actualiza el valor de cada pixel y distribuye el error a 4 pixeles vecinos. El orden que toma para actualizar los pixeles es de izquierda a derecha y de arriba hacia abajo. Por cada pixel:
+La primera versión de este tipo de algoritmos fue propuesta por [@floyd1976]. Esta implementación propone distribuir el error a 4 pixeles vecinos. Lo pasos que se deben de seguir por cada pixel son:
 
-1.  Se calcula el valor actualizado usando la función **round**.
+1.  Actualizar su valor usando la función $round$.
 
-2.  Se calcula el error, restando el valor antiguo menos el valor nuevo.
+2.  Calcular el error restando el valor antiguo menos el valor actualizado.
 
-3.  Se distribuye el error a pixeles vecinos.
+3.  Distribuir el error a pixeles vecinos.
 
-La siguiente tabla describe la distribución del error en los pixeles vecinos.
+Los cuatro vecinos de un pixel $A$ son: el pixel a su derecha $(x_{A+1}, y_A)$, su pixel inferior izquierdo $(x_{A-1}, y_{A+1})$, su pixel inferior $(x_{A}, y_{A+1})$ y su pixel inferior derecho $(x_{A+1}, y_{A+1})$. La tabla 1 muestra la proporción del error que se le suma a los vecinos de un pixel $A$. Es importante tomar en cuenta que algunos de los vecinos podrían quedar fuera de posiciones válidas cuando el pixel a actualizar forma parte del límite de la imagen. Para solucionar este posible error, se puede encapsular la actualización de los vecinos en una sentencia $try$.
 
-+:--------------------:+:---------------------:+:---------------------:+
-|                      | Pixel actualizado     | \+ 7/16 del error     |
-+----------------------+-----------------------+-----------------------+
-| \+ 3 /16 del error   | \+ 5/16 del error     | \+ 1/16 del error     |
-+----------------------+-----------------------+-----------------------+
+| Coordenada del vecino | Proporción del error   |
+|-----------------------|------------------------|
+| $(x_A+1, y_A)$        | $\frac{7}{16} * error$ |
+| $(x_A-1, y_A+1)$      | $\frac{3}{16} * error$ |
+| $(x_A, y_A+1)$        | $\frac{5}{16} * error$ |
+| $(x_A+1, y_A+1)$      | $\frac{1}{16} * error$ |
 
-: Distribución del error en el Algoritmo Floyd-Steinberg
+: Tabla 1: Error que se le suma a los vecinos en el algoritmo Floyd-Steinberg.
 
-Es importante tomar en cuenta cuando el pixel a actualizar forma parte de límite de la imagen, algunos de los vecinos quedarán fuera de los límites de la imagen. Para solucionar este posible error, el algoritmo **FSdithering** encapsula la actualización de los vecinos en una sentencia **try**.
+El método $FSanimacion$ genera una animación de los cambios que sufre una imagen con el algoritmo Floyd-Steinberg. Este método recibe dos entradas: la imagen a procesar y el número de pixeles que se actualizan consecutivamente. Sugiero que este método sea empleado en imágenes pequeñas ya que es muy costoso. Para el caso específico de la imagen de prueba 2, la animación se actualizará cada 110 pixeles. Esto corresponde a ver cómo se modifican tres filas de pixeles en cada transición: las primeras dos por actualización del color (blanco o negro) y la última por la distribución del error.
 
-```{r Algoritmo Floyd-Steinberg}
-#Algoritmo Floyd-Steinberg
-FSdithering <- function(imagen){
+```{r Algoritmo animación Floyd-Steinberg, message=FALSE, warning=FALSE}
+#Animación Floyd-Steinberg
+FSanimacion <- function(imagen, pixeles){
+  imagen <- imagen %>% as.matrix() #Conversión de la imagen a una matriz
+  ancho <- width(imagen)
+  alto <- height(imagen)
+  contador <- 0 #Define cada cuantos pixeles se actualiza la animación
+  df <- imagen %>% as.cimg() %>% as.data.frame() %>% mutate(iteracion = 0)
+  for (y in seq(1, alto)) {
+    for (x in seq(1, ancho)) { #Por cada pixel
+      valorViejo <- imagen[x, y]
+      valorNuevo <- round(imagen[x, y]) #Calcular su nuevo valor
+      imagen[x, y] <- valorNuevo #Actualizar el valor antiguo
+      error <- valorViejo - valorNuevo #Calcular el error
+      #Difundir el error en los pixeles cercanos
+      try(imagen[x+1, y  ] <- imagen[x+1, y  ] + error*(7/16), silent = T)
+      try(imagen[x-1, y+1] <- imagen[x-1, y+1] + error*(3/16), silent = T)
+      try(imagen[x  , y+1] <- imagen[x  , y+1] + error*(5/16), silent = T)
+      try(imagen[x+1, y+1] <- imagen[x+1, y+1] + error*(1/16), silent = T)
+      contador <- contador + 1
+      #Cada X pixeles se guarda la imagen en un data frame
+      if (contador %% pixeles == 0){
+        df2 <- imagen %>% as.cimg() %>% as.data.frame() %>% mutate(iteracion = contador)
+        df <- rbind(df,df2)
+      }
+    }
+  }
+  df
+}
+```
+
+El tamaño de la imagen de prueba 2 no ayuda a darle el estilo de una imagen punteada, sin embargo, el resultado final se vería mejor si se adopta una gráfica de puntos.
+
+```{r Animación Floyd-Steinberg, message=FALSE, warning=FALSE, fig.show='hold', out.width='50%'}
+resultado <- FSanimacion(im2, 110)
+
+#Animación
+p3 <- resultado %>% ggplot(aes(x,y)) + #Datos
+  geom_raster(aes(fill = value), show.legend = FALSE) + #Gráfica
+  scale_y_reverse() + xlab("") + ylab("") + theme_void() + #Formato
+  ggtitle(label = "Animación de Floyd-Steinberg") + #Título
+  transition_states(iteracion, transition_length = 1, state_length =1) + #Animación
+  scale_fill_gradientn(colours = c("#000000", "#ffffff"), limits = c(0,1)) + # Color
+  theme(title = element_text(size = 18))
+
+p3
+
+#Resultado final con puntos
+p4 <- resultado %>% filter(value == 0 & iteracion == 2970) %>% #Datos última iteración
+  ggplot(aes(x,y)) + geom_point(size = 3) + #Gráfica
+  scale_y_reverse() + xlab("") + ylab("") + theme_void() + #Formato
+  ggtitle(label = "Resultado final") + #Título
+  theme(title = element_text(size = 18))
+
+p4
+```
+
+El método $FSpunteado$ realiza el mismo procedimiento que $FSanimacion$, sin embargo, sólo regresa la imagen final.
+
+```{r Algoritmo Floyd-Steinberg, message=FALSE, warning=FALSE}
+#Algortimo Floyd-Steinberg
+FSpunteado <- function(imagen){
   imagen <- imagen %>% as.matrix() #Conversión de la imagen a una matriz
   ancho <- width(imagen)
   alto <- height(imagen)
@@ -34,7 +97,7 @@ FSdithering <- function(imagen){
       valorViejo <- imagen[x, y]
       valorNuevo <- round(imagen[x, y]) #Calcular su nuevo valor
       imagen[x, y] <- valorNuevo #Actualizar el valor antiguo
-      error <- valorViejo - valorNuevo # Calcular el error
+      error <- valorViejo - valorNuevo #Calcular el error
       #Difundir el error en los pixeles cercanos
       try(imagen[x+1, y  ] <- imagen[x+1, y  ] + error*(7/16), silent = T)
       try(imagen[x-1, y+1] <- imagen[x-1, y+1] + error*(3/16), silent = T)
@@ -44,44 +107,124 @@ FSdithering <- function(imagen){
   }
   imagen %>% as.cimg()
 }
-
-#Gráficación de los resultados
-p2 <- FSdithering(im) %>% as.data.frame() %>% ggplot(aes(x,y)) + #Datos
-  geom_raster(aes(fill = value), show.legend = FALSE) + #Gráfica
-  scale_fill_gradient(low="black", high="white") + # Color
-  scale_y_reverse() + xlab("") + ylab("") + theme_void() # Formato
-
-#Comparación de los resultados
-grid.arrange(p1 + ggtitle("Imagen original"), 
-             p2 + ggtitle("Algoritmo de Floyd-Steinberg"), nrow = 1)
 ```
+
+A continuación, se muestra el resultado de procesar la imagen de prueba 1 con $FSpuntdo$. Se puede observar que el tamaño de un pixel dentro de la cuadrícula de la imagen es muy pequeño debido a que las dimensiones de la imagen que son relativamente grandes. Las tonalidades alcanzadas y los detalles de la imagen procesada sugieren que el algoritmo se desempeña adecuadamente. Sin embargo, si se quisiera usar una gráfica de puntos no sería de utilidad dado que la densidad de los puntos sería muy alta y no permitiría observar los detalles.
+
+```{r Resultados Floyd-Steingberg}
+tiempo <- proc.time()
+resultado <- FSpunteado(im1)
+tiempo <- proc.time() - tiempo
+
+p5 <- resultado %>% as.data.frame() %>% ggplot(aes(x,y)) + #Datos
+  geom_raster(aes(fill = value), show.legend = FALSE) + #Gráfica
+  scale_y_reverse() + xlab("") + ylab("") + theme_void() + #Formato
+  ggtitle(label = "Resultado del algoritmo Floyd-Steinberg", #Título
+          subtitle = paste("Tiempo de ejecución:", 
+                           sprintf("%.2f",tiempo[[3]]), "segundos.")) + #Subtítulo
+  scale_fill_gradientn(colours = c("#000000", "#ffffff"), limits = c(0,1)) # Color
+
+grid.arrange(p1, p5, nrow = 1)
+```
+
+------------------------------------------------------------------------
 
 ## Jarvis-Judice-Ninke
 
-A diferencia de la formulación de Floyd y Steinberg, el algoritmo de [@jarvis1976] incrementa a 12 el número de pixeles que emplea para distiribuir el ruido.
+A diferencia de la formulación de Floyd y Steinberg, el algoritmo de [@jarvis1976] incrementa a 12 el número de pixeles que emplea para distribuir el ruido. La tabla 2 muestra la proporción del error que se le suma a los vecinos de un pixel $A$.
 
-+:-----------------:+:-----------------:+:-----------------:+:-----------------:+:-----------------:+
-|                   |                   | Pixel actualizado | \+ 7/48 del error | \+ 5/48 del error |
-+-------------------+-------------------+-------------------+-------------------+-------------------+
-| \+ 3/48 del error | \+ 5/48 del error | \+ 7/48 del error | \+ 5/48 del error | \+ 3/48 del error |
-+-------------------+-------------------+-------------------+-------------------+-------------------+
-| \+ 1/48 del error | \+ 3/48 del error | \+ 5/48 del error | \+ 3/48 del error | \+ 1/48 del error |
-+-------------------+-------------------+-------------------+-------------------+-------------------+
+| Coordenada del vecino | Proporción del error    | Coordenada del vecino | Proporción del error   |
+|-----------------------|-------------------------|-----------------------|------------------------|
+| $(x_A+1, y_A)$        | $\frac{7 }{48} * error$ | $(x_A+2, y_A+1)$      | $\frac{3}{48} * error$ |
+| $(x_A+2, y_A)$        | $\frac{5}{48} * error$  | $(x_A-2, y_A+2)$      | $\frac{1}{48} * error$ |
+| $(x_A-2, y_A+1)$      | $\frac{3}{48} * error$  | $(x_A-1, y_A+2)$      | $\frac{3}{48} * error$ |
+| $(x_A-1, y_A+1)$      | $\frac{5}{48} * error$  | $(x_A, y_A+2)$        | $\frac{5}{48} * error$ |
+| $(x_A, y_A+1)$        | $\frac{7}{48} * error$  | $(x_A+1, y_A+2)$      | $\frac{3}{48} * error$ |
+| $(x_A+1, y_A+1)$      | $\frac{5}{48} * error$  | $(x_A+2, y_A+2)$      | $\frac{5}{48} * error$ |
 
-: Distribución del error en el algoritmo de Jarvis-Judice-Ninke
+: Tabla 2: Error que se le suma a los vecinos en el algoritmo Jarvis-Judice-Ninke
 
-```{r Algoritmo Jarvis-Judice-Ninke}
-#Algoritmo Jarvis-Judice-Ninke
-JJNdithering <- function(imagen){
+El método $JJNanimacion$ genera la animación de los cambios que sufre una imagen con el algoritmo Jarvis-Judice-Ninke. Al igual que $FSanimacion$, recibe una imagen y el número de pixeles que son actualizados consecutivamente.
+
+```{r Algoritmo animación Jarvis-Judice-Ninke, message=FALSE, warning=FALSE}
+#Animación Jarvis-Judice-Ninke
+JJNanimacion <- function(imagen, pixeles){
+  imagen <- imagen %>% as.matrix() #Conversión de la imagen a una matriz
+  ancho <- width(imagen)
+  alto <- height(imagen)
+  contador <- 0 #Define cada cuantos pixeles se actualiza la animación
+  df <- imagen %>% as.cimg() %>% as.data.frame() %>% mutate(iteracion = 0)
+  for (y in seq(1, alto)) {
+    for (x in seq(1, ancho)) { #Por cada pixel
+      valorViejo <- imagen[x, y]
+      valorNuevo <- round(imagen[x, y]) #Calcular su nuevo valor
+      imagen[x, y] <- valorNuevo #Actualizar el valor antiguo
+      error <- valorViejo - valorNuevo #Calcular el error
+      #Difundir el error en los pixeles cercanos
+      try(imagen[x+1, y  ] <- imagen[x+1, y  ] + error*(7/48), silent = T)
+      try(imagen[x+2, y  ] <- imagen[x+2, y  ] + error*(5/48), silent = T)
+      try(imagen[x-2, y+1] <- imagen[x-2, y+1] + error*(3/48), silent = T)
+      try(imagen[x-1, y+1] <- imagen[x-1, y+1] + error*(5/48), silent = T)
+      try(imagen[x  , y+1] <- imagen[x  , y+1] + error*(7/48), silent = T)
+      try(imagen[x+1, y+1] <- imagen[x+1, y+1] + error*(5/48), silent = T)
+      try(imagen[x+2, y+1] <- imagen[x+2, y+1] + error*(3/48), silent = T)
+      try(imagen[x-2, y+2] <- imagen[x-2, y+2] + error*(1/48), silent = T)
+      try(imagen[x-1, y+2] <- imagen[x-1, y+2] + error*(3/48), silent = T)
+      try(imagen[x  , y+2] <- imagen[x  , y+2] + error*(5/48), silent = T)
+      try(imagen[x+1, y+2] <- imagen[x+1, y+2] + error*(3/48), silent = T)
+      try(imagen[x+2, y+2] <- imagen[x+2, y+2] + error*(1/48), silent = T)
+      contador <- contador + 1
+      #Cada X pixeles se guarda la imagen en un data frame
+      if (contador %% pixeles == 0){
+        df2 <- imagen %>% as.cimg() %>% as.data.frame() %>% mutate(iteracion = contador)
+        df <- rbind(df,df2)
+      }
+    }
+  }
+  df
+}
+```
+
+La diferencia principal que se puede observar en la animación es el número de pixeles afectados por la distribución del error. Mientras que en la animación del método $FSanimacion$ existe una línea de pixeles modificados por el error, en la animación de $JJNanimacion$ la línea se hace más gruesa debido a que el número de vecinos modificados aumenta. De igual forma, sugiero que este método se usado en imágenes pequeñas por su costo de procesamiento.
+
+```{r Animación Jarvis-Judice-Ninke, message=FALSE, warning=FALSE, fig.show='hold', out.width='50%'}
+resultado <- JJNanimacion(im2, 110)
+
+#Animación
+p3 <- resultado %>% ggplot(aes(x,y)) + #Datos
+  geom_raster(aes(fill = value), show.legend = FALSE) + #Gráfica
+  scale_y_reverse() + xlab("") + ylab("") + theme_void() + #Formato
+  ggtitle(label = "Animación de Floyd-Steinberg") + #Título
+  transition_states(iteracion, transition_length = 1, state_length =1) + #Animación
+  scale_fill_gradientn(colours = c("#000000", "#ffffff"), limits = c(0,1)) + # Color
+  theme(title = element_text(size = 18))
+
+p3
+
+#Resultado final con puntos
+p4 <- resultado %>% filter(value == 0 & iteracion == 2970) %>% #Datos última iteración
+  ggplot(aes(x,y)) + geom_point(size = 3) + #Gráfica
+  scale_y_reverse() + xlab("") + ylab("") + theme_void() + #Formato
+  ggtitle(label = "Resultado final") + #Título
+  theme(title = element_text(size = 18))
+
+p4
+```
+
+Al igual que $FSpunteado$, el método $JNNpunteado$ realiza el procedimiento de distribución de ruido, pero sólo regresa la imagen final. Esta implementación está diseñada para ser ejecutada con imágenes de mayor tamaño en donde no nos interesa ver el cambio de cada pixel.
+
+```{r Algoritmo Jarvis-Judice-Ninke, message=FALSE, warning=FALSE}
+#Algortimo Jarvis-Judice-Ninke
+JJNpunteado <- function(imagen){
   imagen <- imagen %>% as.matrix() #Conversión de la imagen a una matriz
   ancho <- width(imagen)
   alto <- height(imagen)
   for (y in seq(1, alto)) {
     for (x in seq(1, ancho)) { #Por cada pixel
       valorViejo <- imagen[x, y]
-      valorNuevo <- round(imagen[x, y]) #Calcular el valor nuevo del pixel
-      imagen[x, y] <- valorNuevo
-      error <- valorViejo - valorNuevo # Calcular el error
+      valorNuevo <- round(imagen[x, y]) #Calcular su nuevo valor
+      imagen[x, y] <- valorNuevo #Actualizar el valor antiguo
+      error <- valorViejo - valorNuevo #Calcular el error
       #Difundir el error en los pixeles cercanos
       try(imagen[x+1, y  ] <- imagen[x+1, y  ] + error*(7/48), silent = T)
       try(imagen[x+2, y  ] <- imagen[x+2, y  ] + error*(5/48), silent = T)
@@ -99,23 +242,22 @@ JJNdithering <- function(imagen){
   }
   imagen %>% as.cimg()
 }
-
-#Gráficación de resultados
-p3 <- JJNdithering(im) %>% as.data.frame() %>% ggplot(aes(x,y)) + #Datos
-  geom_raster(aes(fill = value), show.legend = FALSE) + #Gráfica
-  scale_fill_gradient(low="black", high="white") + # Color
-  scale_y_reverse() + xlab("") + ylab("") + theme_void() # Formato
-
-#Comparación de resultados
-grid.arrange(p1 + ggtitle("Imagen original"), 
-             p3 + ggtitle("Algoritmo de Jarvis-Judice-Ninke"), nrow = 1)
 ```
 
-## Comparación de algoritmos
+Las tonalidades y detalles alcanzados por $JNNpunteado$ son muy buenos y se acercan al resultado del algoritmo de Floyd y Steinberg. Sin embargo, el cambio de color de algunos pixeles en el fondo blanco y su tiempo de ejecución lo convierten en una opción no ideal. Dependiendo nuestros intereses, podemos seleccionar qué algoritmos ejecutar y al final quedarnos con el resultado que nos parezca más atractivo.
 
-En términos de desempeño, los algoritmos previos producen resultados muy similares. Sin emabrgo, el agoritmo de Jarvis y colegas tarda más en ejecutarse por el número de vecinos a actualizar y aparentemente en algunas secciones de fondo blanco genera pixeles negros. Por estas observaciones, yo sugeriría ocupar la versión de Floyd-Steinberg.
+```{r Resultados Jarvis-Judice-Ninke}
+tiempo <- proc.time()
+resultado <- JJNpunteado(im1)
+tiempo <- proc.time() - tiempo
 
-```{r Comparación de algoritmos que distribuyen el error}
-grid.arrange(p2 + ggtitle("Algoritmo de Floyd-Steinberg"), 
-             p3 + ggtitle("Algoritmo de Jarvis-Judice-Ninke"), nrow = 1)
+p6 <- resultado %>% as.data.frame() %>% ggplot(aes(x,y)) + #Datos
+  geom_raster(aes(fill = value), show.legend = FALSE) + #Gráfica
+  scale_y_reverse() + xlab("") + ylab("") + theme_void() + #Formato
+  ggtitle(label = "Resultado del algoritmo Floyd-Steinberg", #Título
+          subtitle = paste("Tiempo de ejecución:", 
+                           sprintf("%.2f",tiempo[[3]]), "segundos.")) + #Subtítulo
+  scale_fill_gradientn(colours = c("#000000", "#ffffff"), limits = c(0,1)) # Color
+
+grid.arrange(p5, p6, nrow = 1)
 ```

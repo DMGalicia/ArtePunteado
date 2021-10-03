@@ -1,6 +1,6 @@
 introducción
 materiales-requeridos
+información-del-autor
 algoritmos-que-distribuyen-el-error
 floyd-steinberg
 jarvis-judice-ninke
-comparación-de-algoritmos

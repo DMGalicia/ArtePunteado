@@ -5,26 +5,26 @@
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>Arte computacional punteado</title>
-  <meta name="description" content="Algoritmos más famosos para hacer arte punteado." />
+  <meta name="description" content="Arte computacional punteado" />
   <meta name="generator" content="bookdown 0.24 and GitBook 2.6.7" />
 
   <meta property="og:title" content="Arte computacional punteado" />
   <meta property="og:type" content="book" />
   
   
-  <meta property="og:description" content="Algoritmos más famosos para hacer arte punteado." />
+  
   
 
   <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="Arte computacional punteado" />
   
-  <meta name="twitter:description" content="Algoritmos más famosos para hacer arte punteado." />
+  
   
 
-<meta name="author" content="David Martínez-Galicia" />
+<meta name="author" content="David Martínez-Galicia - IIIA - UV" />
 
 
-<meta name="date" content="2021-09-25" />
+<meta name="date" content="2021-10-03" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -53,6 +53,354 @@
 
 <link href="libs/anchor-sections-1.0.1/anchor-sections.css" rel="stylesheet" />
 <script src="libs/anchor-sections-1.0.1/anchor-sections.js"></script>
+
+<script>
+/* ========================================================================
+ * Bootstrap: transition.js v3.3.7
+ * http://getbootstrap.com/javascript/#transitions
+ * ========================================================================
+ * Copyright 2011-2016 Twitter, Inc.
+ * Licensed under MIT (https://github.com/twbs/bootstrap/blob/master/LICENSE)
+ * ======================================================================== */
+
+
++function ($) {
+  'use strict';
+
+  // CSS TRANSITION SUPPORT (Shoutout: http://www.modernizr.com/)
+  // ============================================================
+
+  function transitionEnd() {
+    var el = document.createElement('bootstrap')
+
+    var transEndEventNames = {
+      WebkitTransition : 'webkitTransitionEnd',
+      MozTransition    : 'transitionend',
+      OTransition      : 'oTransitionEnd otransitionend',
+      transition       : 'transitionend'
+    }
+
+    for (var name in transEndEventNames) {
+      if (el.style[name] !== undefined) {
+        return { end: transEndEventNames[name] }
+      }
+    }
+
+    return false // explicit for ie8 (  ._.)
+  }
+
+  // http://blog.alexmaccaw.com/css-transitions
+  $.fn.emulateTransitionEnd = function (duration) {
+    var called = false
+    var $el = this
+    $(this).one('bsTransitionEnd', function () { called = true })
+    var callback = function () { if (!called) $($el).trigger($.support.transition.end) }
+    setTimeout(callback, duration)
+    return this
+  }
+
+  $(function () {
+    $.support.transition = transitionEnd()
+
+    if (!$.support.transition) return
+
+    $.event.special.bsTransitionEnd = {
+      bindType: $.support.transition.end,
+      delegateType: $.support.transition.end,
+      handle: function (e) {
+        if ($(e.target).is(this)) return e.handleObj.handler.apply(this, arguments)
+      }
+    }
+  })
+
+}(jQuery);
+</script>
+<script>
+/* ========================================================================
+ * Bootstrap: collapse.js v3.3.7
+ * http://getbootstrap.com/javascript/#collapse
+ * ========================================================================
+ * Copyright 2011-2016 Twitter, Inc.
+ * Licensed under MIT (https://github.com/twbs/bootstrap/blob/master/LICENSE)
+ * ======================================================================== */
+
+/* jshint latedef: false */
+
++function ($) {
+  'use strict';
+
+  // COLLAPSE PUBLIC CLASS DEFINITION
+  // ================================
+
+  var Collapse = function (element, options) {
+    this.$element      = $(element)
+    this.options       = $.extend({}, Collapse.DEFAULTS, options)
+    this.$trigger      = $('[data-toggle="collapse"][href="#' + element.id + '"],' +
+                           '[data-toggle="collapse"][data-target="#' + element.id + '"]')
+    this.transitioning = null
+
+    if (this.options.parent) {
+      this.$parent = this.getParent()
+    } else {
+      this.addAriaAndCollapsedClass(this.$element, this.$trigger)
+    }
+
+    if (this.options.toggle) this.toggle()
+  }
+
+  Collapse.VERSION  = '3.3.7'
+
+  Collapse.TRANSITION_DURATION = 350
+
+  Collapse.DEFAULTS = {
+    toggle: true
+  }
+
+  Collapse.prototype.dimension = function () {
+    var hasWidth = this.$element.hasClass('width')
+    return hasWidth ? 'width' : 'height'
+  }
+
+  Collapse.prototype.show = function () {
+    if (this.transitioning || this.$element.hasClass('in')) return
+
+    var activesData
+    var actives = this.$parent && this.$parent.children('.panel').children('.in, .collapsing')
+
+    if (actives && actives.length) {
+      activesData = actives.data('bs.collapse')
+      if (activesData && activesData.transitioning) return
+    }
+
+    var startEvent = $.Event('show.bs.collapse')
+    this.$element.trigger(startEvent)
+    if (startEvent.isDefaultPrevented()) return
+
+    if (actives && actives.length) {
+      Plugin.call(actives, 'hide')
+      activesData || actives.data('bs.collapse', null)
+    }
+
+    var dimension = this.dimension()
+
+    this.$element
+      .removeClass('collapse')
+      .addClass('collapsing')[dimension](0)
+      .attr('aria-expanded', true)
+
+    this.$trigger
+      .removeClass('collapsed')
+      .attr('aria-expanded', true)
+
+    this.transitioning = 1
+
+    var complete = function () {
+      this.$element
+        .removeClass('collapsing')
+        .addClass('collapse in')[dimension]('')
+      this.transitioning = 0
+      this.$element
+        .trigger('shown.bs.collapse')
+    }
+
+    if (!$.support.transition) return complete.call(this)
+
+    var scrollSize = $.camelCase(['scroll', dimension].join('-'))
+
+    this.$element
+      .one('bsTransitionEnd', $.proxy(complete, this))
+      .emulateTransitionEnd(Collapse.TRANSITION_DURATION)[dimension](this.$element[0][scrollSize])
+  }
+
+  Collapse.prototype.hide = function () {
+    if (this.transitioning || !this.$element.hasClass('in')) return
+
+    var startEvent = $.Event('hide.bs.collapse')
+    this.$element.trigger(startEvent)
+    if (startEvent.isDefaultPrevented()) return
+
+    var dimension = this.dimension()
+
+    this.$element[dimension](this.$element[dimension]())[0].offsetHeight
+
+    this.$element
+      .addClass('collapsing')
+      .removeClass('collapse in')
+      .attr('aria-expanded', false)
+
+    this.$trigger
+      .addClass('collapsed')
+      .attr('aria-expanded', false)
+
+    this.transitioning = 1
+
+    var complete = function () {
+      this.transitioning = 0
+      this.$element
+        .removeClass('collapsing')
+        .addClass('collapse')
+        .trigger('hidden.bs.collapse')
+    }
+
+    if (!$.support.transition) return complete.call(this)
+
+    this.$element
+      [dimension](0)
+      .one('bsTransitionEnd', $.proxy(complete, this))
+      .emulateTransitionEnd(Collapse.TRANSITION_DURATION)
+  }
+
+  Collapse.prototype.toggle = function () {
+    this[this.$element.hasClass('in') ? 'hide' : 'show']()
+  }
+
+  Collapse.prototype.getParent = function () {
+    return $(this.options.parent)
+      .find('[data-toggle="collapse"][data-parent="' + this.options.parent + '"]')
+      .each($.proxy(function (i, element) {
+        var $element = $(element)
+        this.addAriaAndCollapsedClass(getTargetFromTrigger($element), $element)
+      }, this))
+      .end()
+  }
+
+  Collapse.prototype.addAriaAndCollapsedClass = function ($element, $trigger) {
+    var isOpen = $element.hasClass('in')
+
+    $element.attr('aria-expanded', isOpen)
+    $trigger
+      .toggleClass('collapsed', !isOpen)
+      .attr('aria-expanded', isOpen)
+  }
+
+  function getTargetFromTrigger($trigger) {
+    var href
+    var target = $trigger.attr('data-target')
+      || (href = $trigger.attr('href')) && href.replace(/.*(?=#[^\s]+$)/, '') // strip for ie7
+
+    return $(target)
+  }
+
+
+  // COLLAPSE PLUGIN DEFINITION
+  // ==========================
+
+  function Plugin(option) {
+    return this.each(function () {
+      var $this   = $(this)
+      var data    = $this.data('bs.collapse')
+      var options = $.extend({}, Collapse.DEFAULTS, $this.data(), typeof option == 'object' && option)
+
+      if (!data && options.toggle && /show|hide/.test(option)) options.toggle = false
+      if (!data) $this.data('bs.collapse', (data = new Collapse(this, options)))
+      if (typeof option == 'string') data[option]()
+    })
+  }
+
+  var old = $.fn.collapse
+
+  $.fn.collapse             = Plugin
+  $.fn.collapse.Constructor = Collapse
+
+
+  // COLLAPSE NO CONFLICT
+  // ====================
+
+  $.fn.collapse.noConflict = function () {
+    $.fn.collapse = old
+    return this
+  }
+
+
+  // COLLAPSE DATA-API
+  // =================
+
+  $(document).on('click.bs.collapse.data-api', '[data-toggle="collapse"]', function (e) {
+    var $this   = $(this)
+
+    if (!$this.attr('data-target')) e.preventDefault()
+
+    var $target = getTargetFromTrigger($this)
+    var data    = $target.data('bs.collapse')
+    var option  = data ? 'toggle' : $this.data()
+
+    Plugin.call($target, option)
+  })
+
+}(jQuery);
+</script>
+<script>
+window.initializeCodeFolding = function(show) {
+
+  // handlers for show-all and hide all
+  $("#rmd-show-all-code").click(function() {
+    $('div.r-code-collapse').each(function() {
+      $(this).collapse('show');
+    });
+  });
+  $("#rmd-hide-all-code").click(function() {
+    $('div.r-code-collapse').each(function() {
+      $(this).collapse('hide');
+    });
+  });
+
+  // index for unique code element ids
+  var currentIndex = 1;
+
+  // select all R code blocks
+  var rCodeBlocks = $('pre.sourceCode, pre.r, pre.python, pre.bash, pre.sql, pre.cpp, pre.stan');
+  rCodeBlocks.each(function() {
+
+    // create a collapsable div to wrap the code in
+    var div = $('<div class="collapse r-code-collapse"></div>');
+    if (show)
+      div.addClass('in');
+    var id = 'rcode-643E0F36' + currentIndex++;
+    div.attr('id', id);
+    $(this).before(div);
+    $(this).detach().appendTo(div);
+
+    // add a show code button right above
+    var showCodeText = $('<span>' + (show ? 'Ocultar código' : 'Mostrar código ') + '</span>');
+    var showCodeButton = $('<button type="button" class="btn btn-default btn-xs code-folding-btn pull-right"></button>');
+    showCodeButton.append(showCodeText);
+    showCodeButton
+        .attr('data-toggle', 'collapse')
+        .attr('data-target', '#' + id)
+        .attr('aria-expanded', show)
+        .attr('aria-controls', id);
+
+    var buttonRow = $('<div class="row"></div>');
+    var buttonCol = $('<div class="col-md-12"></div>');
+
+    buttonCol.append(showCodeButton);
+    buttonRow.append(buttonCol);
+
+    div.before(buttonRow);
+
+    // update state of button on show/hide
+    div.on('hidden.bs.collapse', function () {
+      showCodeText.text('Mostrar código');
+    });
+    div.on('show.bs.collapse', function () {
+      showCodeText.text('Ocultar código');
+    });
+  });
+
+}
+</script>
+<style type="text/css">
+.code-folding-btn { margin-bottom: 4px; }
+.row { display: flex; }
+.collapse { display: none; }
+.in { display:block }
+</style>
+<script>
+$(document).ready(function () {
+  window.initializeCodeFolding("show" === "show");
+});
+</script>
+
 
 
 <style type="text/css">
@@ -158,12 +506,12 @@ div.csl-indent {
 <li class="chapter" data-level="1" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i><b>1</b> Introducción</a>
 <ul>
 <li class="chapter" data-level="1.1" data-path="index.html"><a href="index.html#materiales-requeridos"><i class="fa fa-check"></i><b>1.1</b> Materiales requeridos</a></li>
+<li class="chapter" data-level="1.2" data-path="index.html"><a href="index.html#información-del-autor"><i class="fa fa-check"></i><b>1.2</b> Información del autor</a></li>
 </ul></li>
 <li class="chapter" data-level="2" data-path="algoritmos-que-distribuyen-el-error.html"><a href="algoritmos-que-distribuyen-el-error.html"><i class="fa fa-check"></i><b>2</b> Algoritmos que distribuyen el error</a>
 <ul>
 <li class="chapter" data-level="2.1" data-path="algoritmos-que-distribuyen-el-error.html"><a href="algoritmos-que-distribuyen-el-error.html#floyd-steinberg"><i class="fa fa-check"></i><b>2.1</b> Floyd-Steinberg</a></li>
 <li class="chapter" data-level="2.2" data-path="algoritmos-que-distribuyen-el-error.html"><a href="algoritmos-que-distribuyen-el-error.html#jarvis-judice-ninke"><i class="fa fa-check"></i><b>2.2</b> Jarvis-Judice-Ninke</a></li>
-<li class="chapter" data-level="2.3" data-path="algoritmos-que-distribuyen-el-error.html"><a href="algoritmos-que-distribuyen-el-error.html#comparación-de-algoritmos"><i class="fa fa-check"></i><b>2.3</b> Comparación de algoritmos</a></li>
 </ul></li>
 <li class="chapter" data-level="" data-path="referencias.html"><a href="referencias.html"><i class="fa fa-check"></i>Referencias</a></li>
 </ul>
@@ -185,12 +533,13 @@ div.csl-indent {
             <section class="normal" id="section-">
 <div id="header">
 <h1 class="title">Arte computacional punteado</h1>
-<p class="author"><em>David Martínez-Galicia</em></p>
-<p class="date"><em>2021-09-25</em></p>
+<p class="author"><em>David Martínez-Galicia - IIIA - UV</em></p>
+<p class="date"><em>2021-10-03</em></p>
 </div>
 <div id="introducción" class="section level1" number="1">
 <h1><span class="header-section-number">Capítulo 1</span> Introducción</h1>
-<p>Este libro representa los esfuerzos realizados por mí, <a href="https://twitter.com/OyeDavidGalicia">David Galicia</a>, para entender cómo son generadas imágenes punteadas a través de computadoras. El objetivo de este proyecto recreativo es realizar un recorrido a tráves los algoritmos más conocidos para hacer arte punteado, observando desde resultados nada esperados hasta algunos que podríamos considerar arte. Todo el código necesario se encuentra explicado y puede ser utilizado para su diversión. El lenguaje de programación usado es R, pero esperaría que con la explicación brindada los algoritmos puedan ser implementados en el lenguaje de su preferencia.</p>
+<p>Este libro representa los esfuerzos que he realizado para entender cómo es generado el arte punteado a través de computadoras. Mi objetivo principal es realizar un recorrido de los algoritmos más conocidos para poder entender su funcionamiento y generar mis propias obras de arte. En especial, me enfocaré en revisar los algoritmos que realizan arte punteado con un solo color.</p>
+<p>Todo el código necesario para generar las imágenes se encuentra explicado y puede ser utilizado para su diversión. El lenguaje de programación que uso es R, pero esperaría que con la explicación brindada los algoritmos puedan ser implementados en el lenguaje de su preferencia.</p>
 <hr />
 <div id="materiales-requeridos" class="section level2" number="1.1">
 <h2><span class="header-section-number">1.1</span> Materiales requeridos</h2>
@@ -198,19 +547,40 @@ div.csl-indent {
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="index.html#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr) <span class="co">#Manipulación de datos</span></span>
 <span id="cb1-2"><a href="index.html#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(imager) <span class="co">#Procesamiento de imágenes</span></span>
 <span id="cb1-3"><a href="index.html#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2) <span class="co">#Visualización de datos</span></span>
-<span id="cb1-4"><a href="index.html#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(gridExtra) <span class="co">#Combinación gráficas en arreglos personalizados</span></span></code></pre></div>
-<p>También necesitamos una imagen con la que probaremos nuestros algoritmos. Dado que sólo enfocaremos en hacer arte punteado con un color, las imagen con las que trabaremos deben de estar en escala de grises. La imagen que seleccioné muestra un helecho con fondo blanco. Aparentemente con esta imagen fueron probados muchos algoritmos que inicialmente se propusieron. Si desean ocupar otra imagen, la libreria <strong>imager</strong> permite manipular imágenes PNG, JPEG y BMP.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="index.html#cb2-1" aria-hidden="true" tabindex="-1"></a>im <span class="ot">&lt;-</span> <span class="fu">load.image</span>(<span class="st">&quot;http://dahtah.github.io/imager/images/stippling_leaves.png&quot;</span>)</span>
-<span id="cb2-2"><a href="index.html#cb2-2" aria-hidden="true" tabindex="-1"></a>im <span class="ot">&lt;-</span> <span class="fu">grayscale</span>(im) <span class="co">#Si es necesario, convertir la imagen a escala de grises</span></span>
-<span id="cb2-3"><a href="index.html#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-4"><a href="index.html#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co">#Gráfica con la imagen original</span></span>
-<span id="cb2-5"><a href="index.html#cb2-5" aria-hidden="true" tabindex="-1"></a>p1 <span class="ot">&lt;-</span> im <span class="sc">%&gt;%</span> as.data.frame <span class="sc">%&gt;%</span> <span class="fu">ggplot</span>(<span class="fu">aes</span>(x, y)) <span class="sc">+</span> <span class="co">#Datos</span></span>
-<span id="cb2-6"><a href="index.html#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_raster</span>(<span class="fu">aes</span>(<span class="at">fill =</span> value), <span class="at">show.legend =</span> <span class="cn">FALSE</span>) <span class="sc">+</span> <span class="co">#Gráfica </span></span>
-<span id="cb2-7"><a href="index.html#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_gradient</span>(<span class="at">low=</span><span class="st">&quot;black&quot;</span>, <span class="at">high=</span><span class="st">&quot;white&quot;</span>) <span class="sc">+</span> <span class="co"># Color</span></span>
-<span id="cb2-8"><a href="index.html#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_reverse</span>() <span class="sc">+</span> <span class="fu">xlab</span>(<span class="st">&quot;&quot;</span>) <span class="sc">+</span> <span class="fu">ylab</span>(<span class="st">&quot;&quot;</span>) <span class="sc">+</span> <span class="fu">theme_void</span>() <span class="co"># Formato</span></span>
-<span id="cb2-9"><a href="index.html#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-10"><a href="index.html#cb2-10" aria-hidden="true" tabindex="-1"></a>p1 <span class="sc">+</span> <span class="fu">ggtitle</span>(<span class="st">&quot;Imagen de prueba&quot;</span>)</span></code></pre></div>
-<p><img src="_main_files/figure-html/Imagen%20de%20prueba-1.png" width="672" /></p>
+<span id="cb1-4"><a href="index.html#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(gridExtra) <span class="co">#Combinación gráficas en arreglos personalizados</span></span>
+<span id="cb1-5"><a href="index.html#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(gganimate) <span class="co">#Animación de gráficas</span></span></code></pre></div>
+<p>También necesitaremos algunas imágenes para probar nuestros algoritmos. Dado que sólo enfocaremos en hacer arte punteado con un color, las imágenes que usaremos deben de estar en escala de grises. Particularmente, usare las siguientes imágenes:</p>
+<ol style="list-style-type: decimal">
+<li><p>Helecho con fondo blanco: Esta imagen tiene 991 pixeles de ancho y 994 de alto. Ha sido ocupada por muchos trabajos para evaluar cómo los algoritmos generan los detalles, colores y matices.</p></li>
+<li><p>Perro pug: Esta imagen tiene un formato cuadrado de 55 pixeles y la generé reduciendo el tamaño de una foto propia. Será de particular ayuda para mostrar cómo los algoritmos transforman las imágenes originales.</p></li>
+</ol>
+<p>Si desean ocupar otras imágenes, la librería <strong>imager</strong> permite manipular imágenes PNG, JPEG y BMP.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="index.html#cb2-1" aria-hidden="true" tabindex="-1"></a>im1 <span class="ot">&lt;-</span> <span class="fu">load.image</span>(<span class="st">&quot;http://dmgalicia.github.io/ArtePunteado/images/stippling_leaves.png&quot;</span>)</span>
+<span id="cb2-2"><a href="index.html#cb2-2" aria-hidden="true" tabindex="-1"></a>im2 <span class="ot">&lt;-</span> <span class="fu">load.image</span>(<span class="st">&quot;http://dmgalicia.github.io/ArtePunteado/images/Pug.png&quot;</span>)</span>
+<span id="cb2-3"><a href="index.html#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">#Si es necesario, convertir la imagen a escala de grises con la función grayscale(im)</span></span>
+<span id="cb2-4"><a href="index.html#cb2-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-5"><a href="index.html#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co">#Gráfica con la imagen original</span></span>
+<span id="cb2-6"><a href="index.html#cb2-6" aria-hidden="true" tabindex="-1"></a>p1 <span class="ot">&lt;-</span> im1 <span class="sc">%&gt;%</span> as.data.frame <span class="sc">%&gt;%</span> <span class="fu">ggplot</span>(<span class="fu">aes</span>(x, y)) <span class="sc">+</span> <span class="co">#Datos</span></span>
+<span id="cb2-7"><a href="index.html#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_raster</span>(<span class="fu">aes</span>(<span class="at">fill =</span> value), <span class="at">show.legend =</span> <span class="cn">FALSE</span>) <span class="sc">+</span> <span class="co">#Gráfica </span></span>
+<span id="cb2-8"><a href="index.html#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_gradient</span>(<span class="at">low=</span><span class="st">&quot;black&quot;</span>, <span class="at">high=</span><span class="st">&quot;white&quot;</span>) <span class="sc">+</span> <span class="co"># Color</span></span>
+<span id="cb2-9"><a href="index.html#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_reverse</span>() <span class="sc">+</span> <span class="fu">xlab</span>(<span class="st">&quot;&quot;</span>) <span class="sc">+</span> <span class="fu">ylab</span>(<span class="st">&quot;&quot;</span>) <span class="sc">+</span> <span class="fu">theme_void</span>() <span class="sc">+</span> <span class="co"># Formato</span></span>
+<span id="cb2-10"><a href="index.html#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="at">label =</span> <span class="st">&quot;Imagen de prueba 1&quot;</span>, <span class="co">#Títulos</span></span>
+<span id="cb2-11"><a href="index.html#cb2-11" aria-hidden="true" tabindex="-1"></a>             <span class="at">subtitle =</span> <span class="fu">paste</span>(<span class="fu">width</span>(im1), <span class="st">&quot;pixeles x&quot;</span>, <span class="fu">height</span>(im1), <span class="st">&quot;pixeles.&quot;</span>))</span>
+<span id="cb2-12"><a href="index.html#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-13"><a href="index.html#cb2-13" aria-hidden="true" tabindex="-1"></a>p2 <span class="ot">&lt;-</span> im2 <span class="sc">%&gt;%</span> as.data.frame <span class="sc">%&gt;%</span> <span class="fu">ggplot</span>(<span class="fu">aes</span>(x, y)) <span class="sc">+</span> <span class="co">#Datos</span></span>
+<span id="cb2-14"><a href="index.html#cb2-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_raster</span>(<span class="fu">aes</span>(<span class="at">fill =</span> value), <span class="at">show.legend =</span> <span class="cn">FALSE</span>) <span class="sc">+</span> <span class="co">#Gráfica </span></span>
+<span id="cb2-15"><a href="index.html#cb2-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_gradient</span>(<span class="at">low=</span><span class="st">&quot;black&quot;</span>, <span class="at">high=</span><span class="st">&quot;white&quot;</span>) <span class="sc">+</span> <span class="co"># Color</span></span>
+<span id="cb2-16"><a href="index.html#cb2-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_reverse</span>() <span class="sc">+</span> <span class="fu">xlab</span>(<span class="st">&quot;&quot;</span>) <span class="sc">+</span> <span class="fu">ylab</span>(<span class="st">&quot;&quot;</span>) <span class="sc">+</span> <span class="fu">theme_void</span>() <span class="sc">+</span> <span class="co"># Formato</span></span>
+<span id="cb2-17"><a href="index.html#cb2-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggtitle</span>(<span class="at">label =</span> <span class="st">&quot;Imagen de prueba 2&quot;</span>, <span class="co">#Títulos</span></span>
+<span id="cb2-18"><a href="index.html#cb2-18" aria-hidden="true" tabindex="-1"></a>             <span class="at">subtitle =</span> <span class="fu">paste</span>(<span class="fu">width</span>(im2), <span class="st">&quot;pixeles x&quot;</span>, <span class="fu">height</span>(im2), <span class="st">&quot;pixeles.&quot;</span>))</span>
+<span id="cb2-19"><a href="index.html#cb2-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-20"><a href="index.html#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="fu">grid.arrange</span>(p1, p2, <span class="at">nrow =</span> <span class="dv">1</span>)</span></code></pre></div>
+<p><img src="_main_files/figure-html/Imagenes%20de%20prueba-1.png" width="672" /></p>
+<hr />
+</div>
+<div id="información-del-autor" class="section level2" number="1.2">
+<h2><span class="header-section-number">1.2</span> Información del autor</h2>
+<p>¡Hola! Mi nombre es David Martínez Galicia. Actualmente soy estudiante del Doctorado en Inteligencia Artificial de la Universidad Veracruzana y formo parte del grupo de divulgación <a href="https://www.youtube.com/c/CodigoIA">Código IA</a>. Mis principales temas de interés son la minería de datos y el aprendizaje máquina. De vez en cuando me hago proyectos aleatorios para divertirme un rato. Si tienen alguna duda, comentario o sugerencia, me pueden contactar a través de mi cuenta en <a href="https://twitter.com/OyeDavidGalicia">Twitter</a> o de mi <a href="mailto:davidgalicia@outlook.es">correo personal</a>. Espero disfruten jugar con estos algoritmos tanto como yo.</p>
 
 </div>
 </div>
@@ -265,9 +635,10 @@ gitbook.start({
 "options": null
 },
 "toc": {
-"collapse": "section",
+"collapse": null,
 "scroll_highlight": true
 },
+"show_codefolding_buttons": true,
 "toolbar": {
 "position": "fixed"
 },
@@ -276,6 +647,20 @@ gitbook.start({
 });
 </script>
 
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    var src = "true";
+    if (src === "" || src === "true") src = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML";
+    if (location.protocol !== "file:")
+      if (/^https?:/.test(src))
+        src = src.replace(/^https?:/, '');
+    script.src = src;
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
 </body>
 
 </html>
